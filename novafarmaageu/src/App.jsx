@@ -1,53 +1,61 @@
 import React, { useState, useEffect } from "react";
-import { db } from "./firebase";
+import { initializeApp } from "firebase/app";
 import {
+  getFirestore,
   collection,
   addDoc,
   getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
   query,
   where,
-  orderBy
+  updateDoc,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
+import "./index.css";
 
-const LOGIN_USER = "admin";
-const LOGIN_PASS = "75611814lucas";
+// 🔹 Configuração Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBW6ZTGHyaYwVgT9dog2y-B2Xg44d_047o",
+  authDomain: "novafarmaageu-5c519.firebaseapp.com",
+  projectId: "novafarmaageu-5c519",
+  storageBucket: "novafarmaageu-5c519.firebasestorage.app",
+  messagingSenderId: "954166915495",
+  appId: "1:954166915495:web:d90f95364e95c8e31b0682",
+  measurementId: "G-XNDV0NKV3H",
+};
 
-const App = () => {
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+export default function App() {
+  const [loginUser, setLoginUser] = useState("");
+  const [loginPass, setLoginPass] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
+
   const [loja, setLoja] = useState("");
-  const [faltas, setFaltas] = useState([]);
   const [ean, setEan] = useState("");
   const [nome, setNome] = useState("");
   const [quantidade, setQuantidade] = useState("");
-  const [loginUser, setLoginUser] = useState("");
-  const [loginPass, setLoginPass] = useState("");
+  const [faltas, setFaltas] = useState([]);
 
-  // 🔹 Efetuar login simples
+  // 🔹 Login fixo
   const handleLogin = () => {
-    if (loginUser === LOGIN_USER && loginPass === LOGIN_PASS) {
+    if (loginUser === "admin" && loginPass === "75611814lucas") {
       setLoggedIn(true);
     } else {
       alert("Usuário ou senha incorretos!");
     }
   };
 
-  // 🔹 Carregar faltas da loja selecionada
+  // 🔹 Carregar faltas
   useEffect(() => {
-    const fetchFaltas = async () => {
-      if (!loja) return;
-      const q = query(
-        collection(db, "faltas"),
-        where("loja", "==", loja),
-        orderBy("data", "desc")
-      );
-      const querySnapshot = await getDocs(q);
-      setFaltas(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    const carregar = async () => {
+      const querySnapshot = await getDocs(collection(db, "faltas"));
+      const dados = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setFaltas(dados);
     };
-    fetchFaltas();
-  }, [loja]);
+    carregar();
+  }, []);
 
   // 🔹 Adicionar ou atualizar produto
   const handleAdd = async () => {
@@ -56,26 +64,26 @@ const App = () => {
       return;
     }
 
-    // Verifica se já existe o produto pelo EAN
+    const hoje = new Date();
+    const dataFormatada = hoje.toLocaleDateString("pt-BR");
+
     const q = query(collection(db, "faltas"), where("ean", "==", ean), where("loja", "==", loja));
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      // Atualiza o registro existente
       const docRef = doc(db, "faltas", querySnapshot.docs[0].id);
       await updateDoc(docRef, {
         quantidade: Number(quantidade),
-        data: new Date().toISOString(),
+        data: dataFormatada,
       });
       alert("Falta atualizada com sucesso!");
     } else {
-      // Cria novo registro
       await addDoc(collection(db, "faltas"), {
         loja,
         ean,
         nome,
         quantidade: Number(quantidade),
-        data: new Date().toISOString(),
+        data: dataFormatada,
       });
       alert("Falta adicionada!");
     }
@@ -110,7 +118,7 @@ const App = () => {
         />
         <button
           onClick={handleLogin}
-          className="bg-red-600 text-white px-6 py-2 rounded"
+          className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700"
         >
           Entrar
         </button>
@@ -119,101 +127,91 @@ const App = () => {
   }
 
   return (
-    <div className="p-4 bg-yellow-100 min-h-screen">
-      <h1 className="text-center text-3xl font-bold text-red-700 mb-4">
-        Nova Farma Ageu - Controle de Faltas
+    <div className="min-h-screen bg-yellow-50 p-6">
+      <h1 className="text-3xl font-bold text-center text-red-700 mb-6">
+        Sistema de Faltas - Nova Farma Ageu
       </h1>
 
-      {!loja ? (
-        <div className="flex flex-col items-center">
-          <h2 className="text-xl mb-4 font-semibold">Selecione a loja:</h2>
-          {[
-            "Loja 1 – Nova Farma Ageu Primavera",
-            "Loja 2 – Nova Farma Ageu P. Paulista",
-            "Loja 3 – Nova Farma Ageu Vila S. Luiz",
-          ].map((nomeLoja) => (
-            <button
-              key={nomeLoja}
-              onClick={() => setLoja(nomeLoja)}
-              className="bg-red-600 text-white px-6 py-2 rounded mb-2"
-            >
-              {nomeLoja}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="flex justify-between mb-4">
-            <h2 className="text-xl font-bold text-red-700">{loja}</h2>
-            <button
-              onClick={() => setLoja("")}
-              className="text-sm bg-gray-300 px-3 py-1 rounded"
-            >
-              Trocar loja
-            </button>
-          </div>
+      {/* Seleção de Loja */}
+      <div className="mb-6 flex justify-center">
+        <select
+          value={loja}
+          onChange={(e) => setLoja(e.target.value)}
+          className="border p-2 rounded text-red-700"
+        >
+          <option value="">Selecione a loja</option>
+          <option value="Nova Farma Ageu Primavera">Loja 1 – Nova Farma Ageu Primavera</option>
+          <option value="Nova Farma Ageu P. Paulista">Loja 2 – Nova Farma Ageu P. Paulista</option>
+          <option value="Nova Farma Ageu Vila S. Luiz">Loja 3 – Nova Farma Ageu Vila S. Luiz</option>
+        </select>
+      </div>
 
-          {/* Cadastro */}
-          <div className="bg-white p-4 rounded shadow mb-4">
-            <h3 className="text-lg font-bold mb-2">Cadastrar falta</h3>
-            <div className="flex gap-2">
-              <input
-                placeholder="EAN"
-                className="border p-2 rounded flex-1"
-                value={ean}
-                onChange={(e) => setEan(e.target.value)}
-              />
-              <input
-                placeholder="Nome do produto"
-                className="border p-2 rounded flex-1"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-              />
-              <input
-                placeholder="Quantidade"
-                type="number"
-                className="border p-2 rounded w-24"
-                value={quantidade}
-                onChange={(e) => setQuantidade(e.target.value)}
-              />
-              <button
-                onClick={handleAdd}
-                className="bg-red-600 text-white px-4 py-2 rounded"
-              >
-                Adicionar
-              </button>
-            </div>
-          </div>
+      {/* Formulário de Produto */}
+      <div className="bg-white p-4 rounded-lg shadow-md max-w-xl mx-auto mb-6">
+        <h2 className="text-xl font-semibold text-red-700 mb-4 text-center">Adicionar Produto</h2>
+        <input
+          placeholder="EAN"
+          className="border p-2 rounded w-full mb-2"
+          value={ean}
+          onChange={(e) => setEan(e.target.value)}
+        />
+        <input
+          placeholder="Nome do Produto"
+          className="border p-2 rounded w-full mb-2"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
+        <input
+          placeholder="Quantidade"
+          type="number"
+          className="border p-2 rounded w-full mb-4"
+          value={quantidade}
+          onChange={(e) => setQuantidade(e.target.value)}
+        />
+        <button
+          onClick={handleAdd}
+          className="bg-red-600 text-white w-full py-2 rounded hover:bg-red-700 transition"
+        >
+          Adicionar Produto
+        </button>
+      </div>
 
-          {/* Lista */}
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="text-lg font-bold mb-2">Faltas registradas</h3>
+      {/* Lista de Faltas */}
+      <div className="max-w-3xl mx-auto bg-white p-4 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-red-700 mb-4 text-center">Faltas Registradas</h2>
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-red-100">
+              <th className="border p-2">Loja</th>
+              <th className="border p-2">EAN</th>
+              <th className="border p-2">Produto</th>
+              <th className="border p-2">Qtd</th>
+              <th className="border p-2">Data</th>
+              <th className="border p-2">Excluir</th>
+            </tr>
+          </thead>
+          <tbody>
             {faltas.map((f) => (
-              <div
-                key={f.id}
-                className="flex justify-between items-center border-b py-2"
-              >
-                <div>
-                  <p className="font-semibold">{f.nome}</p>
-                  <p className="text-sm text-gray-600">
-                    EAN: {f.ean} | Quantidade: {f.quantidade} | Data:{" "}
-                    {new Date(f.data).toLocaleDateString("pt-BR")}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDelete(f.id)}
-                  className="text-sm bg-gray-200 px-3 py-1 rounded"
-                >
-                  Excluir
-                </button>
-              </div>
+              <tr key={f.id}>
+                <td className="border p-2">{f.loja}</td>
+                <td className="border p-2">{f.ean}</td>
+                <td className="border p-2">{f.nome}</td>
+                <td className="border p-2">{f.quantidade}</td>
+                <td className="border p-2">{f.data}</td>
+                <td className="border p-2 text-center">
+                  <button
+                    onClick={() => handleDelete(f.id)}
+                    className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                  >
+                    X
+                  </button>
+                </td>
+              </tr>
             ))}
-          </div>
-        </>
-      )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
-};
-
-export default App;
+}
 
