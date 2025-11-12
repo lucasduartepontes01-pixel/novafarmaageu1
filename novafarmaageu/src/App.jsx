@@ -35,15 +35,16 @@ export default function App(){
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(()=>{
-    if(!selectedStore){ setFaltas([]); return; }
-    setLoading(true);
-    const col = collection(db,'faltas');
-    const q = query(col, where('store','==',selectedStore.id), orderBy('date','desc'));
-    const unsub = onSnapshot(q, snap=>{
-      setFaltas(snap.docs.map(d=>({id:d.id, ...d.data()})));
-      setLoading(false);
-    }, err=>{
+  useEffect(() => {
+  if (!loja) return;
+  const q = query(collection(db, "faltas"), where("loja", "==", loja));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setFaltas(data);
+  });
+  return () => unsubscribe();
+}, [loja]);
+
       console.error(err);
       setLoading(false);
     });
