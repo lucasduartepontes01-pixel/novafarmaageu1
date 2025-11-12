@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom colors */
+:root{
+  --brand-red: #D32F2F;
+  --brand-yellow: #FFEB3B;
+}
+body { background: #f8fafc; }
