@@ -199,7 +199,14 @@ export default function App(){
               <div className="mt-3 text-sm text-gray-600">Loja: <strong>{selectedStore?selectedStore.label:'Nenhuma selecionada'}</strong></div>
               <form onSubmit={handleAdd} className="mt-4 space-y-3">
                 <input value={ean} onChange={e=>setEan(e.target.value)} placeholder="EAN (código)" className="w-full p-3 border rounded" />
-                <input value={nome} onChange={e=>setNome(e.target.value.toUpperCase())} placeholder="Nome do produto (maiusculo automático)" className="w-full p-3 border rounded" />
+               <input
+  value={nome}
+  onChange={(e) => setNome(e.target.value.toUpperCase())}
+  className="p-2 border rounded mb-2 uppercase"
+  placeholder="Nome do Produto"
+  required
+/>
+
                 <input value={quantidade} onChange={e=>setQuantidade(e.target.value)} placeholder="Quantidade necessária" type="number" className="w-full p-3 border rounded" />
                 <div className="flex gap-3">
                   <button type="submit" className="flex-1 p-3 bg-[var(--brand-red)] text-white rounded font-semibold">Adicionar Falta</button>
